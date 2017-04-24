@@ -1,5 +1,6 @@
 package com.gokhanozg;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.http.HttpException;
 import org.apache.http.HttpResponse;
@@ -21,6 +22,7 @@ public class TestTwitterAuth {
         byte[] encodedBytes = Base64.encodeBase64(concatenatedKeySecret.getBytes());
         String encodedKeySecret = new String(encodedBytes);
         System.out.println(encodedKeySecret);
+        ObjectMapper objectMapper = new ObjectMapper();
         HttpClient httpClient = new DefaultHttpClient();
 //        HttpPost request = new HttpPost("https://api.twitter.com/oauth2/token");
 //        request.addHeader("Content-Type", "application/x-www-form-urlencoded;charset=UTF-8");
@@ -30,9 +32,15 @@ public class TestTwitterAuth {
 //        HttpResponse response = httpClient.execute(request);
 //        String responseBody = EntityUtils.toString(response.getEntity());
 //        System.out.println(responseBody);
-        HttpGet getTweetsRequest = new HttpGet("https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name=kilicdarogluk");
+
+//        TwitterAuthorizationResponse twitterAuthorizationResponse = objectMapper.readValue(responseBody,TwitterAuthorizationResponse.class);
+//        System.out.println(twitterAuthorizationResponse);
+        HttpGet getTweetsRequest = new HttpGet("https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name=kilicdarogluk&max_id=844580920074100700");
         getTweetsRequest.addHeader("Authorization", "Bearer AAAAAAAAAAAAAAAAAAAAANoW0QAAAAAAaBvJr1w3UIjHqYDMu4OY62J0NDw%3DYY0pp4g2YQtEJpdp3yvpaQ1d7bcPz9Xgqc3IDM8X28ILA9Nle0");
         HttpResponse response = httpClient.execute(getTweetsRequest);
-        System.out.println(EntityUtils.toString(response.getEntity()));
+        String tweets = EntityUtils.toString(response.getEntity());
+        System.out.println(tweets);
+        TweetObject[] tweetObjects = objectMapper.readValue(tweets, TweetObject[].class);
+        System.out.println(tweetObjects);
     }
 }
