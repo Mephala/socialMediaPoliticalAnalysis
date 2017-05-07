@@ -1,6 +1,6 @@
-import com.gokhanozg.FacebookTrendInterval;
-import com.gokhanozg.HibernateUtil;
-import com.gokhanozg.Politician;
+import com.gokhanozg.ptnla.FacebookTrendInterval;
+import com.gokhanozg.ptnla.HibernateUtil;
+import com.gokhanozg.ptnla.Politician;
 import mockit.integration.junit4.JMockit;
 import org.hibernate.Session;
 import org.junit.Test;

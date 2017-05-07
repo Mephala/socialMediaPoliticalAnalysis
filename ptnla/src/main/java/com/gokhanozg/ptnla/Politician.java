@@ -1,4 +1,4 @@
-package com.gokhanozg;
+package com.gokhanozg.ptnla;
 
 import org.hibernate.annotations.Cascade;
 import org.hibernate.annotations.LazyCollection;

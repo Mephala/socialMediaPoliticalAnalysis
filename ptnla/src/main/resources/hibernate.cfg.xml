@@ -32,9 +32,9 @@
         <property name="show_sql">false</property>
 
         <property name="hbm2ddl.auto">update</property>
-        <mapping class="com.gokhanozg.Politician"/>
-        <mapping class="com.gokhanozg.FacebookTrendInterval"/>
-        <mapping class="com.gokhanozg.TweetObject"/>
+        <mapping class="com.gokhanozg.ptnla.Politician"/>
+        <mapping class="com.gokhanozg.ptnla.FacebookTrendInterval"/>
+        <mapping class="com.gokhanozg.ptnla.TweetObject"/>
 
 
     </session-factory>

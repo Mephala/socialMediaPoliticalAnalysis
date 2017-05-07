@@ -1,7 +1,7 @@
-package com.gokhanozg.dao;
+package com.gokhanozg.ptnla.dao;
 
-import com.gokhanozg.HibernateUtil;
-import com.gokhanozg.Politician;
+import com.gokhanozg.ptnla.HibernateUtil;
+import com.gokhanozg.ptnla.Politician;
 import org.hibernate.Criteria;
 import org.hibernate.Session;
 

@@ -1,6 +1,6 @@
-package com.gokhanozg;
+package com.gokhanozg.ptnla;
 
-import com.gokhanozg.dao.PoliticanDao;
+import com.gokhanozg.ptnla.dao.PoliticanDao;
 
 import java.math.BigDecimal;
 import java.text.ParseException;

@@ -1,4 +1,4 @@
-package com.gokhanozg;
+package com.gokhanozg.ptnla;
 
 import com.fasterxml.jackson.annotation.*;
 

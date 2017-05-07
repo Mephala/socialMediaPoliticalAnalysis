@@ -1,4 +1,4 @@
-package com.gokhanozg;
+package com.gokhanozg.ptnla;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.codec.binary.Base64;

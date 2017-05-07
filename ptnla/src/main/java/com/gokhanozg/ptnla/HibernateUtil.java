@@ -1,4 +1,4 @@
-package com.gokhanozg;
+package com.gokhanozg.ptnla;
 
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.AnnotationConfiguration;

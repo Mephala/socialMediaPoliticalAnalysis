@@ -1,4 +1,4 @@
-package com.gokhanozg;
+package com.gokhanozg.ptnla;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
