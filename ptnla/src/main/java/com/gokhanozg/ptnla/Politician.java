@@ -23,10 +23,6 @@ public class Politician {
     @Column(name = "POLITICIAN_TWITTER_ACCOUNT_NAME", nullable = false)
     private String politicianTwitterAccountName;
 
-    @OneToMany(cascade = CascadeType.ALL)
-    @Cascade(org.hibernate.annotations.CascadeType.DELETE_ORPHAN)
-    @LazyCollection(LazyCollectionOption.FALSE)
-    private List<TweetObject> tweets;
 
     @OneToMany(cascade = CascadeType.ALL)
     @Cascade(org.hibernate.annotations.CascadeType.DELETE_ORPHAN)
@@ -72,13 +68,7 @@ public class Politician {
         return politicianId.hashCode();
     }
 
-    public List<TweetObject> getTweets() {
-        return tweets;
-    }
 
-    public void setTweets(List<TweetObject> tweets) {
-        this.tweets = tweets;
-    }
 
     public List<FacebookTrendInterval> getTrendIntervals() {
         return trendIntervals;

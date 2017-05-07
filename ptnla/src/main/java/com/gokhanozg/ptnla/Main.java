@@ -1,8 +1,12 @@
 package com.gokhanozg.ptnla;
 
+import com.gokhanozg.ptnla.api.TwitterConnector;
 import com.gokhanozg.ptnla.dao.PoliticanDao;
+import org.apache.http.HttpException;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -24,12 +28,25 @@ public class Main {
         try {
             createPoliticansIfNotExists();
             initTrendsIfNotInitiated();
+            initTweetsIfNotInitiated();
         } catch (Throwable t) {
             System.err.println("Program terminated due to Fatal error.");
             t.printStackTrace();
         }
 
 
+    }
+
+    private static void initTweetsIfNotInitiated() throws HttpException, IOException, InterruptedException, ParseException, URISyntaxException {
+        for (Politician politician : allPoliticians) {
+            List<FacebookTrendInterval> trendIntervals = politician.getTrendIntervals();
+            for (FacebookTrendInterval trendInterval : trendIntervals) {
+                if (trendInterval.getTweets() == null || trendInterval.getTweets().isEmpty()) {
+                    TwitterConnector.fillTweets(politician);
+                    break;
+                }
+            }
+        }
     }
 
     private static void initTrendsIfNotInitiated() throws ParseException {

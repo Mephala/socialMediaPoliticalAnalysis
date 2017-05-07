@@ -1,10 +1,13 @@
 package com.gokhanozg.ptnla;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
+import org.hibernate.annotations.Cascade;
+import org.hibernate.annotations.LazyCollection;
+import org.hibernate.annotations.LazyCollectionOption;
+
+import javax.persistence.*;
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Created by mephala on 4/24/17.
@@ -22,6 +25,11 @@ public class FacebookTrendInterval {
     private Date end;
     @Column(name = "POPULATION_CHANGE")
     private BigDecimal populationChange;
+
+    @OneToMany(cascade = CascadeType.ALL)
+    @Cascade(org.hibernate.annotations.CascadeType.DELETE_ORPHAN)
+    @LazyCollection(LazyCollectionOption.FALSE)
+    private List<TweetObject> tweets;
 
     public String getTrendId() {
         return trendId;
@@ -55,5 +63,20 @@ public class FacebookTrendInterval {
         this.populationChange = weeklyChange;
     }
 
+    public List<TweetObject> getTweets() {
+        return tweets;
+    }
 
+    public void setTweets(List<TweetObject> tweets) {
+        this.tweets = tweets;
+    }
+
+    @Override
+    public String toString() {
+        return "FacebookTrendInterval{" +
+                "trendId='" + trendId + '\'' +
+                ", start=" + start +
+                ", end=" + end +
+                '}';
+    }
 }

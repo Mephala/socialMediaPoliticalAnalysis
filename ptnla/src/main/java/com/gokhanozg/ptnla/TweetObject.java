@@ -113,4 +113,13 @@ public class TweetObject {
     public void setFavoriteCount(Long favoriteCount) {
         this.favoriteCount = favoriteCount;
     }
+
+    @Override
+    public String toString() {
+        return "TweetObject{" +
+                "createdAt='" + createdAt + '\'' +
+                ", id='" + id + '\'' +
+                ", idStr='" + idStr + '\'' +
+                '}';
+    }
 }
