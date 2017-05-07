@@ -33,8 +33,8 @@ public class TestPoliticianCreation {
             Date d = new Date();
             d.setTime(d.getTime() + (1000 * 60 * 60 * 24 * 7));
             trendInterval.setEnd(d);
-            trendInterval.setPolitician(p);
-            trendInterval.setWeeklyChange(new BigDecimal(-40.36));
+//            trendInterval.setPolitician(p);
+            trendInterval.setPopulationChange(new BigDecimal(-40.36));
             trendInterval.setTrendId(UUID.randomUUID().toString());
             session.saveOrUpdate(trendInterval);
             session.getTransaction().commit();

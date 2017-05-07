@@ -5,6 +5,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+
 /**
  * Created by mephala on 4/24/17.
  */
@@ -19,20 +23,38 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
         "favorite_Count"
 })
 @JsonIgnoreProperties(ignoreUnknown = true)
+@Entity(name = "TWEET")
 public class TweetObject {
+
     @JsonProperty("created_at")
+    @Column
     private String createdAt;
+
     @JsonProperty("id")
+    @Id
+    @Column(name = "TWEET_ID")
     private String id;
+
     @JsonProperty("id_str")
+    @Column
     private String idStr;
+
     @JsonProperty("text")
+    @Column
     private String text;
+
     @JsonProperty("truncated")
+    @Column(name = "TRUNCATED")
     private Boolean truncated;
+
+
     @JsonProperty("retweet_count")
+    @Column
     private Long retweetCount;
+
+
     @JsonProperty("favorite_count")
+    @Column
     private Long favoriteCount;
 
 

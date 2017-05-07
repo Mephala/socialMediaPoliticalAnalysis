@@ -3,7 +3,6 @@ package com.gokhanozg;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
-import javax.persistence.ManyToOne;
 import java.math.BigDecimal;
 import java.util.Date;
 
@@ -13,8 +12,7 @@ import java.util.Date;
 @Entity(name = "FACEBOOK_TREND")
 public class FacebookTrendInterval {
 
-    @ManyToOne
-    Politician politician;
+
     @Id
     @Column(name = "TREND_ID")
     private String trendId;
@@ -22,8 +20,8 @@ public class FacebookTrendInterval {
     private Date start;
     @Column(name = "END_DATE", nullable = false)
     private Date end;
-    @Column(name = "WEEKLY_CHANGE")
-    private BigDecimal weeklyChange;
+    @Column(name = "POPULATION_CHANGE")
+    private BigDecimal populationChange;
 
     public String getTrendId() {
         return trendId;
@@ -49,19 +47,13 @@ public class FacebookTrendInterval {
         this.end = end;
     }
 
-    public BigDecimal getWeeklyChange() {
-        return weeklyChange;
+    public BigDecimal getPopulationChange() {
+        return populationChange;
     }
 
-    public void setWeeklyChange(BigDecimal weeklyChange) {
-        this.weeklyChange = weeklyChange;
+    public void setPopulationChange(BigDecimal weeklyChange) {
+        this.populationChange = weeklyChange;
     }
 
-    public Politician getPolitician() {
-        return politician;
-    }
 
-    public void setPolitician(Politician politician) {
-        this.politician = politician;
-    }
 }
