@@ -44,29 +44,9 @@ public class Main {
         List<String> tweetStrings = new ArrayList<>();
         for (Politician politician : allPoliticians) {
             List<FacebookTrendInterval> trendIntervals = politician.getTrendIntervals();
-            for (FacebookTrendInterval trendInterval : trendIntervals) {
-                List<TweetObject> tweets = trendInterval.getTweets();
-                for (TweetObject tweet : tweets) {
-                    String tweetString = tweet.getText();
-                    tweetStrings.add(tweetString);
-                }
-            }
-            Set<String> words = new HashSet<>();
-            for (String tweetString : tweetStrings) {
-                StringTokenizer tokenizer = new StringTokenizer(tweetString, " ");
-                while (tokenizer.hasMoreTokens()) {
-                    words.add(tokenizer.nextToken());
-                }
-            }
-            List<Word> wordList = new ArrayList<>();
-            for (String word : words) {
-                Word wd = new Word();
-                wd.setWordText(word);
-                wd.setId(UUID.randomUUID().toString());
-                wd.setPersistentValue(Math.random());
-                wordList.add(wd);
-            }
-            Collections.sort(wordList);
+
+
+            List<Word> wordList = createTweetWordsList(tweetStrings, trendIntervals);
             int yColumns = trendIntervals.size();
             SimpleMatrix y = new SimpleMatrix(yColumns, 1);
             for (int i = 0; i < trendIntervals.size(); i++) {
@@ -75,18 +55,82 @@ public class Main {
             }
             SimpleMatrix A = new SimpleMatrix(yColumns, wordList.size());
             for (int i = 0; i < yColumns; i++) {
-                A.setRow(i, 0, getPersistentValues(wordList));
+                A.setRow(i, 0, getPersistentValues(wordList, trendIntervals.get(i)));
             }
-            System.out.println(A.transpose().mult(A).invert().mult(A.transpose().mult(y)));
+            System.out.println(A);
+            System.out.println("*********************************************************************");
+            SimpleMatrix w = A.transpose().mult(A).invert().mult(A.transpose().mult(y));
+            System.out.println(w);
+            for (int i = 0; i < wordList.size(); i++) {
+                Word word = wordList.get(i);
+                word.setCoefficient(w.get(i, 0));
+            }
+            Collections.sort(wordList, new Comparator<Word>() {
+                @Override
+                public int compare(Word o1, Word o2) {
+                    return o2.getCoefficient().compareTo(o1.getCoefficient());
+                }
+            });
+
+            System.out.println("******************************************************");
+
+            System.out.println("Top 10 rewarding words in tweets:");
+            for (int i = 0; i < 10; i++) {
+                System.out.println(wordList.get(i));
+            }
         }
 
     }
 
-    private static double[] getPersistentValues(List<Word> wordList) {
+    private static List<Word> createTweetWordsList(List<String> tweetStrings, List<FacebookTrendInterval> trendIntervals) {
+        for (FacebookTrendInterval trendInterval : trendIntervals) {
+            List<TweetObject> tweets = trendInterval.getTweets();
+            for (TweetObject tweet : tweets) {
+                String tweetString = tweet.getText();
+                tweetStrings.add(tweetString);
+            }
+        }
+        Set<String> words = new HashSet<>();
+        for (String tweetString : tweetStrings) {
+            tokenizeWordsAndAddToSet(words, tweetString);
+        }
+        List<Word> wordList = new ArrayList<>();
+        for (String word : words) {
+            Word wd = new Word();
+            wd.setWordText(word);
+            wd.setId(UUID.randomUUID().toString());
+            wd.setPersistentValue(Math.random());
+            wordList.add(wd);
+        }
+        Collections.sort(wordList);
+        return wordList;
+    }
+
+    private static void tokenizeWordsAndAddToSet(Set<String> words, String tweetString) {
+        StringTokenizer tokenizer = new StringTokenizer(tweetString, " ");
+        while (tokenizer.hasMoreTokens()) {
+            words.add(tokenizer.nextToken());
+        }
+    }
+
+    private static double[] getPersistentValues(List<Word> wordList, FacebookTrendInterval facebookTrendInterval) {
+        //tokenizing all used words in the tweet.
+        Set<String> words = new HashSet<>();
+        List<TweetObject> tweets = facebookTrendInterval.getTweets();
+        for (TweetObject tweet : tweets) {
+            tokenizeWordsAndAddToSet(words, tweet.getText());
+        }
+
+
         double[] values = new double[wordList.size()];
         for (int i = 0; i < wordList.size(); i++) {
             Word word = wordList.get(i);
-            values[i] = word.getPersistentValue();
+            String wordText = word.getWordText();
+            if (words.contains(wordText)) {
+                values[i] = word.getPersistentValue();
+            } else {
+                values[i] = 0; // if word doesn't exist in interval wordset, it's coefficient value doesn't matter.
+            }
         }
         return values;
     }
