@@ -65,11 +65,10 @@ public class Main {
                 Word word = wordList.get(i);
                 word.setCoefficient(w.get(i, 0));
             }
-            Collections.sort(wordList, new Comparator<Word>() {
-                @Override
-                public int compare(Word o1, Word o2) {
-                    return o2.getCoefficient().compareTo(o1.getCoefficient());
-                }
+            Collections.sort(wordList, (o1, o2) -> {
+                Double persistentCoefficientCombined1 = o1.getCoefficient() * o1.getPersistentValue();
+                Double persistentCoefficientCombined2 = o2.getCoefficient() * o2.getPersistentValue();
+                return persistentCoefficientCombined2.compareTo(persistentCoefficientCombined1);
             });
 
             System.out.println("******************************************************");
