@@ -3,15 +3,14 @@ package com.gokhanozg.ptnla;
 import com.gokhanozg.ptnla.api.TwitterConnector;
 import com.gokhanozg.ptnla.dao.PoliticanDao;
 import org.apache.http.HttpException;
+import org.ejml.simple.SimpleMatrix;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Created by mephala on 4/24/17.
@@ -26,15 +25,70 @@ public class Main {
 
     public static void main(String[] args) {
         try {
-            createPoliticansIfNotExists();
-            initTrendsIfNotInitiated();
-            initTweetsIfNotInitiated();
+//            createPoliticansIfNotExists();
+//            initTrendsIfNotInitiated();
+//            initTweetsIfNotInitiated();
+            createRegressionCoefficients();
         } catch (Throwable t) {
             System.err.println("Program terminated due to Fatal error.");
             t.printStackTrace();
         }
 
 
+    }
+
+    private static void createRegressionCoefficients() {
+        if (allPoliticians == null || allPoliticians.isEmpty()) {
+            allPoliticians = politicanDao.getAllPoliticians();
+        }
+        List<String> tweetStrings = new ArrayList<>();
+        for (Politician politician : allPoliticians) {
+            List<FacebookTrendInterval> trendIntervals = politician.getTrendIntervals();
+            for (FacebookTrendInterval trendInterval : trendIntervals) {
+                List<TweetObject> tweets = trendInterval.getTweets();
+                for (TweetObject tweet : tweets) {
+                    String tweetString = tweet.getText();
+                    tweetStrings.add(tweetString);
+                }
+            }
+            Set<String> words = new HashSet<>();
+            for (String tweetString : tweetStrings) {
+                StringTokenizer tokenizer = new StringTokenizer(tweetString, " ");
+                while (tokenizer.hasMoreTokens()) {
+                    words.add(tokenizer.nextToken());
+                }
+            }
+            List<Word> wordList = new ArrayList<>();
+            for (String word : words) {
+                Word wd = new Word();
+                wd.setWordText(word);
+                wd.setId(UUID.randomUUID().toString());
+                wd.setPersistentValue(Math.random());
+                wordList.add(wd);
+            }
+            Collections.sort(wordList);
+            int yColumns = trendIntervals.size();
+            SimpleMatrix y = new SimpleMatrix(yColumns, 1);
+            for (int i = 0; i < trendIntervals.size(); i++) {
+                FacebookTrendInterval interval = trendIntervals.get(i);
+                y.setRow(i, 0, interval.getPopulationChange().doubleValue());
+            }
+            SimpleMatrix A = new SimpleMatrix(yColumns, wordList.size());
+            for (int i = 0; i < yColumns; i++) {
+                A.setRow(i, 0, getPersistentValues(wordList));
+            }
+            System.out.println(A.transpose().mult(A).invert().mult(A.transpose().mult(y)));
+        }
+
+    }
+
+    private static double[] getPersistentValues(List<Word> wordList) {
+        double[] values = new double[wordList.size()];
+        for (int i = 0; i < wordList.size(); i++) {
+            Word word = wordList.get(i);
+            values[i] = word.getPersistentValue();
+        }
+        return values;
     }
 
     private static void initTweetsIfNotInitiated() throws HttpException, IOException, InterruptedException, ParseException, URISyntaxException {

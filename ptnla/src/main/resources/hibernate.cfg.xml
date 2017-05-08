@@ -35,6 +35,7 @@
         <mapping class="com.gokhanozg.ptnla.Politician"/>
         <mapping class="com.gokhanozg.ptnla.FacebookTrendInterval"/>
         <mapping class="com.gokhanozg.ptnla.TweetObject"/>
+        <mapping class="com.gokhanozg.ptnla.Word"/>
 
 
     </session-factory>
