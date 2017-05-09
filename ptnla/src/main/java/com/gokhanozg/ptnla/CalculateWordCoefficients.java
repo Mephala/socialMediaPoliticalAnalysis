@@ -14,7 +14,7 @@ import java.util.concurrent.Callable;
  */
 public class CalculateWordCoefficients implements Callable<List<Word>> {
 
-    private static final boolean RECORD = true;
+    private static final boolean RECORD = false;
     private List<FacebookTrendInterval> trendIntervals;
 
     public CalculateWordCoefficients(List<FacebookTrendInterval> trendIntervals) {

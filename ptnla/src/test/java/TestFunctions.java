@@ -158,12 +158,14 @@ public class TestFunctions {
     public void testOLSSimpleProblem() {
         try {
             OLSMultipleLinearRegression regression = new OLSMultipleLinearRegression();
-            double[] y = new double[]{106, 120, 190, 167};
-            double[][] x = new double[4][];
+            double[] y = new double[]{106, 120, 190, 167, 220, 249};
+            double[][] x = new double[6][];
             x[0] = new double[]{3, 5, 10, 5, 7};
             x[1] = new double[]{4, 6, 11, 5, 6};
             x[2] = new double[]{2, 7, 13, 8, 11};
             x[3] = new double[]{4, 8, 11, 4, 5};
+            x[4] = new double[]{4, 8, 11, 4, 5};
+            x[5] = new double[]{4, 8, 11, 4, 5};
             regression.newSampleData(y, x);
             double[] beta = regression.estimateRegressionParameters();
 
