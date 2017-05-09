@@ -1,6 +1,7 @@
 package com.gokhanozg.ptnla;
 
 import com.gokhanozg.ptnla.api.TwitterConnector;
+import com.gokhanozg.ptnla.argument.ArgumentParser;
 import com.gokhanozg.ptnla.dao.PoliticanDao;
 import org.apache.http.HttpException;
 
@@ -9,9 +10,7 @@ import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -22,17 +21,24 @@ public class Main {
     private static final String KK_TWITTER_NAME = "kilicdarogluk";
     private static final int THREAD = 8;
     private static final ExecutorService executorService = Executors.newFixedThreadPool(THREAD);
-    private static final int EPOCH = 50;
+    private static final int EPOCH = 800;
+    private static final int BUFFED_RATIO = 500;
     private static PoliticanDao politicanDao = new PoliticanDao();
     private static List<Politician> allPoliticians;
     private static SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yy");
 
     public static void main(String[] args) {
         try {
-            createPoliticansIfNotExists();
-            initTrendsIfNotInitiated();
-            initTweetsIfNotInitiated();
-            createRegressionCoefficients();
+            Map<String, String> arguments = ArgumentParser.getArguments(args);
+            if (arguments.containsKey("build")) {
+                createPoliticansIfNotExists();
+                initTrendsIfNotInitiated();
+                initTweetsIfNotInitiated();
+                createRegressionCoefficients();
+            }
+            if (arguments.containsKey("predictFor")) {
+                predictFor(arguments);
+            }
         } catch (Throwable t) {
             System.err.println("Program terminated due to Fatal error.");
             t.printStackTrace();
@@ -41,11 +47,34 @@ public class Main {
 
     }
 
+    private static void predictFor(Map<String, String> arguments) {
+        String tweeterName = arguments.get("predictFor");
+        String tweet = arguments.get("tweet");
+        if (tweet == null || tweet.length() == 0) {
+            System.err.println("Tweet String is mandatory for prediction. Example: --predictFor <politicanTweeterAccount> --tweet something everything is sometimes.");
+            System.exit(0);
+        }
+        allPoliticians = politicanDao.getAllPoliticians();
+        for (Politician politician : allPoliticians) {
+            if (politician.getPoliticianTwitterAccountName().equals(tweeterName)) {
+                predictUserGain(tweet, politician);
+                System.exit(0);
+            }
+        }
+        System.err.println("No politician with given twitter account name is found. Please check typo.");
+    }
+
+    private static void predictUserGain(String tweet, Politician politician) {
+        System.out.println("Very nice tweet:" + tweet);
+    }
+
     private static void createRegressionCoefficients() throws InterruptedException, ExecutionException {
         if (allPoliticians == null || allPoliticians.isEmpty()) {
             allPoliticians = politicanDao.getAllPoliticians();
         }
         for (Politician politician : allPoliticians) {
+            System.out.println("Calculating word coefficients for politician:" + politician.getPoliticianTurkishName());
+
             List<FacebookTrendInterval> trendIntervals = politician.getTrendIntervals();
             List<Future<List<Word>>> calculatedWordListListFutures = new ArrayList<>();
             List<List<Word>> calculatedWordListList = new ArrayList<>();
@@ -59,13 +88,70 @@ public class Main {
                 calculatedWordListList.add(wordListListFuture.get());
             }
 
-            System.out.println("******************************************************");
-            System.out.println("Top 10 rewarding words in tweets:");
-            for (int i = 0; i < 10; i++) {
-                System.out.println(calculatedWordListList.get(i).get(0));
-            }
-        }
+            final int size = calculatedWordListList.get(0).size();
+            final int ratingThreshold = size / BUFFED_RATIO;
+            Set<CalculatedWord> calculatedWords = new HashSet<>();
 
+            for (List<Word> wordList : calculatedWordListList) {
+                for (int i = 0; i < wordList.size(); i++) {
+                    Word w = wordList.get(i);
+                    long rating = wordList.size() - i; // if word is at start of the list, gets highest rating.
+                    if (rating < ratingThreshold) //if rating is lower than the most important quarter, it is ignored for this turn
+                        rating = 0;
+                    rating = rating * rating * rating * rating;
+                    CalculatedWord calculatedWord = new CalculatedWord(w.getWordText(), rating);
+                    if (calculatedWords.contains(calculatedWord)) {
+                        for (CalculatedWord cWord : calculatedWords) {
+                            if (cWord.equals(calculatedWord)) {
+                                cWord.setRating(cWord.getRating() + rating);
+                                break;
+                            }
+                        }
+                    } else {
+                        calculatedWords.add(calculatedWord);
+                    }
+                }
+            }
+            List<CalculatedWord> sortedCalculatedWords = new ArrayList<>();
+            for (CalculatedWord calculatedWord : calculatedWords) {
+                sortedCalculatedWords.add(calculatedWord);
+            }
+            Collections.sort(sortedCalculatedWords);
+
+
+            System.out.println("*********** TOP 50 words for politician:" + politician.getPoliticianTurkishName() + "*******************");
+            List<Word> mostAccurateWordList = findMostAccurateWordList(sortedCalculatedWords, calculatedWordListList);
+            for (int i = 0; i < 50; i++) {
+                System.out.println(mostAccurateWordList.get(i).getWordText());
+            }
+
+            System.out.println("*** Saving most accurate word coefficients for future predictions... ***");
+            politician.setWords(mostAccurateWordList);
+            politicanDao.savePolitician(politician);
+
+        }
+    }
+
+    private static List<Word> findMostAccurateWordList(List<CalculatedWord> sortedCalculatedWords, List<List<Word>> calculatedWordListList) {
+        int precisionDepth = 0;
+        while (calculatedWordListList.size() != 1) {
+            Iterator<List<Word>> wordListIterator = calculatedWordListList.iterator();
+            while (wordListIterator.hasNext()) {
+                List<Word> nextList = wordListIterator.next();
+                if (!sortedCalculatedWords.get(precisionDepth).getText().equals(nextList.get(precisionDepth).getWordText())) {
+                    if (calculatedWordListList.size() == 1) {
+                        System.out.println("None of the randomized coefficient succeed precision depth:" + precisionDepth + ", moving along with the most precise one.");
+                        return calculatedWordListList.get(0);
+                    } else {
+                        wordListIterator.remove();
+                    }
+                } else {
+                    System.out.println("Randomized coefficient succeed precision depth:" + precisionDepth);
+                }
+            }
+            precisionDepth++;
+        }
+        return calculatedWordListList.get(0);
     }
 
 

@@ -29,6 +29,11 @@ public class Politician {
     @LazyCollection(LazyCollectionOption.FALSE)
     private List<FacebookTrendInterval> trendIntervals;
 
+    @OneToMany(cascade = CascadeType.ALL)
+    @Cascade(org.hibernate.annotations.CascadeType.DELETE_ORPHAN)
+    @LazyCollection(LazyCollectionOption.FALSE)
+    private List<Word> words;
+
     public String getPoliticianId() {
         return politicianId;
     }
@@ -69,7 +74,6 @@ public class Politician {
     }
 
 
-
     public List<FacebookTrendInterval> getTrendIntervals() {
         return trendIntervals;
     }
@@ -85,5 +89,13 @@ public class Politician {
                 ", politicianTurkishName='" + politicianTurkishName + '\'' +
                 ", politicianTwitterAccountName='" + politicianTwitterAccountName + '\'' +
                 '}';
+    }
+
+    public List<Word> getWords() {
+        return words;
+    }
+
+    public void setWords(List<Word> words) {
+        this.words = words;
     }
 }

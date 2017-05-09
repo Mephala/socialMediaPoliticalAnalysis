@@ -18,7 +18,14 @@ public class CalculateWordCoefficients implements Callable<List<Word>> {
 
     @Override
     public List<Word> call() throws Exception {
-        return calculateMostWordCoefficients();
+        try {
+            return calculateMostWordCoefficients();
+        } catch (Throwable t) {
+            System.out.println("Encountered error, re-calibrating random coefficients");
+            t.printStackTrace();
+            return calculateMostWordCoefficients();
+        }
+
     }
 
     private List<Word> calculateMostWordCoefficients() {
