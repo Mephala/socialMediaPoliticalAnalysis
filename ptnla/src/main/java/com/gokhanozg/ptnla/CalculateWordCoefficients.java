@@ -1,7 +1,11 @@
 package com.gokhanozg.ptnla;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.io.FileUtils;
 import org.ejml.simple.SimpleMatrix;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Callable;
 
@@ -10,6 +14,7 @@ import java.util.concurrent.Callable;
  */
 public class CalculateWordCoefficients implements Callable<List<Word>> {
 
+    private static final boolean RECORD = true;
     private List<FacebookTrendInterval> trendIntervals;
 
     public CalculateWordCoefficients(List<FacebookTrendInterval> trendIntervals) {
@@ -28,7 +33,7 @@ public class CalculateWordCoefficients implements Callable<List<Word>> {
 
     }
 
-    private List<Word> calculateMostWordCoefficients() {
+    private List<Word> calculateMostWordCoefficients() throws IOException {
         List<Word> wordList = createTweetWordsList(trendIntervals);
         int yColumns = trendIntervals.size();
         SimpleMatrix y = new SimpleMatrix(yColumns, 1);
@@ -40,6 +45,18 @@ public class CalculateWordCoefficients implements Callable<List<Word>> {
         for (int i = 0; i < yColumns; i++) {
             A.setRow(i, 0, getPersistentValues(wordList, trendIntervals.get(i)));
         }
+
+        if (RECORD) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            String ySerialized = objectMapper.writeValueAsString(new SerializableMatrix(y));
+            File yFile = new File("y.ptnla");
+            FileUtils.writeStringToFile(yFile, ySerialized);
+            String ASerialized = objectMapper.writeValueAsString(new SerializableMatrix(A));
+            File AFile = new File("A.ptnla");
+            FileUtils.writeStringToFile(AFile, ASerialized);
+        }
+
+
         SimpleMatrix w = A.transpose().mult(A).invert().mult(A.transpose().mult(y));
         for (int i = 0; i < wordList.size(); i++) {
             Word word = wordList.get(i);

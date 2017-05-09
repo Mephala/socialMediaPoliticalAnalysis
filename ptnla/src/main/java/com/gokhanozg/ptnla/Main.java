@@ -21,7 +21,7 @@ public class Main {
     private static final String KK_TWITTER_NAME = "kilicdarogluk";
     private static final int THREAD = 8;
     private static final ExecutorService executorService = Executors.newFixedThreadPool(THREAD);
-    private static final int EPOCH = 800;
+    private static final int EPOCH = 1;
     private static final int BUFFED_RATIO = 500;
     private static PoliticanDao politicanDao = new PoliticanDao();
     private static List<Politician> allPoliticians;
@@ -39,6 +39,9 @@ public class Main {
             if (arguments.containsKey("predictFor")) {
                 predictFor(arguments);
             }
+            if (arguments.containsKey("evaluate")) {
+                evaluate(arguments);
+            }
         } catch (Throwable t) {
             System.err.println("Program terminated due to Fatal error.");
             t.printStackTrace();
@@ -47,25 +50,83 @@ public class Main {
 
     }
 
+    private static void evaluate(Map<String, String> arguments) {
+        String tweeterName = arguments.get("evaluate");
+        Politician politician = findPoliticianByName(tweeterName);
+        if (politician == null) {
+            System.err.println("No politician with given tweeterName:" + tweeterName);
+            System.exit(0);
+        }
+        Map<String, Word> textToWordsMap = buildWordMapForPolitician(politician);
+        List<FacebookTrendInterval> trendIntervals = politician.getTrendIntervals();
+        for (FacebookTrendInterval trendInterval : trendIntervals) {
+            List<TweetObject> tweetObjects = trendInterval.getTweets();
+            BigDecimal modelPrediction = BigDecimal.ZERO;
+            for (TweetObject tweetObject : tweetObjects) {
+                String[] words = tweetObject.getText().split(" ");
+                for (String word : words) {
+                    modelPrediction = modelPrediction.add(BigDecimal.valueOf(textToWordsMap.get(word).getCoefficient()).multiply(BigDecimal.valueOf(textToWordsMap.get(word).getPersistentValue())));
+                }
+            }
+            System.out.println("From:" + trendInterval.getStart() + ", Until:" + trendInterval.getEnd() + ", popularityGain:" + trendInterval.getPopulationChange() + " (people), modelPrediction:" + modelPrediction + " , error:" + (trendInterval.getPopulationChange().subtract(modelPrediction)));
+        }
+
+    }
+
     private static void predictFor(Map<String, String> arguments) {
         String tweeterName = arguments.get("predictFor");
+        Politician p = findPoliticianByName(tweeterName);
+        if (p == null) {
+            System.err.println("No politician with given twitter account name is found. Please check typo.");
+            System.exit(0);
+        }
+
         String tweet = arguments.get("tweet");
         if (tweet == null || tweet.length() == 0) {
             System.err.println("Tweet String is mandatory for prediction. Example: --predictFor <politicanTweeterAccount> --tweet something everything is sometimes.");
             System.exit(0);
+        } else {
+            predictUserGainFromSingleTweet(tweet, p);
         }
+    }
+
+    private static Politician findPoliticianByName(String tweeterName) {
+        Politician p = null;
         allPoliticians = politicanDao.getAllPoliticians();
         for (Politician politician : allPoliticians) {
             if (politician.getPoliticianTwitterAccountName().equals(tweeterName)) {
-                predictUserGain(tweet, politician);
-                System.exit(0);
+                p = politician;
+                break;
             }
         }
-        System.err.println("No politician with given twitter account name is found. Please check typo.");
+        return p;
     }
 
-    private static void predictUserGain(String tweet, Politician politician) {
-        System.out.println("Very nice tweet:" + tweet);
+    private static void predictUserGainFromSingleTweet(String tweet, Politician politician) {
+        System.out.println("Prediction analysis for politician:" + politician.getPoliticianTurkishName() + ", tweet:" + tweet);
+        Map<String, Word> textToWordsMap = buildWordMapForPolitician(politician);
+        String[] tweetWords = tweet.split(" ");
+        BigDecimal totalPopularity = BigDecimal.ZERO;
+        for (String tweetWord : tweetWords) {
+            if (textToWordsMap.containsKey(tweetWord)) {
+                Word w = textToWordsMap.get(tweetWord);
+                BigDecimal gain = BigDecimal.valueOf(w.getCoefficient() * w.getPersistentValue());
+                totalPopularity = totalPopularity.add(gain);
+                System.out.println("Impact of the word:" + tweetWord + " is " + gain + " users.");
+            } else {
+                System.out.println("Word:" + tweetWord + " is not found in the database.");
+            }
+        }
+        System.out.println("Total predicted user gain for the tweet is:" + totalPopularity.toPlainString());
+    }
+
+    private static Map<String, Word> buildWordMapForPolitician(Politician politician) {
+        Map<String, Word> textToWordsMap = new HashMap<>();
+        List<Word> words = politician.getWords();
+        for (Word word : words) {
+            textToWordsMap.put(word.getWordText(), word);
+        }
+        return textToWordsMap;
     }
 
     private static void createRegressionCoefficients() throws InterruptedException, ExecutionException {
@@ -73,7 +134,14 @@ public class Main {
             allPoliticians = politicanDao.getAllPoliticians();
         }
         for (Politician politician : allPoliticians) {
+
+            if (politician.getWords() != null && politician.getWords().size() > 0) {
+                System.out.println("Previous word analysis found for politician:" + politician.getPoliticianTurkishName() + " , removing previous data");
+                politician.setWords(null);
+                politicanDao.savePolitician(politician);
+            }
             System.out.println("Calculating word coefficients for politician:" + politician.getPoliticianTurkishName());
+
 
             List<FacebookTrendInterval> trendIntervals = politician.getTrendIntervals();
             List<Future<List<Word>>> calculatedWordListListFutures = new ArrayList<>();

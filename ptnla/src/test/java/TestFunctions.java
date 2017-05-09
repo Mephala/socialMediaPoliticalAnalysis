@@ -1,7 +1,14 @@
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gokhanozg.ptnla.SerializableMatrix;
 import mockit.integration.junit4.JMockit;
+import org.apache.commons.io.FileUtils;
 import org.ejml.simple.SimpleMatrix;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
 
 import static junit.framework.TestCase.fail;
 
@@ -9,7 +16,7 @@ import static junit.framework.TestCase.fail;
  * Created by mephala on 4/24/17.
  */
 @RunWith(JMockit.class)
-public class TestPoliticianCreation {
+public class TestFunctions {
 
 
     @Test
@@ -59,7 +66,11 @@ public class TestPoliticianCreation {
             System.out.println(A.transpose().mult(A));
             System.out.println(A.transpose().mult(A).invert());
             System.out.println(A.transpose().mult(A).invert().mult(A.transpose().mult(y)));
-
+            SerializableMatrix sy = new SerializableMatrix(y);
+            SerializableMatrix sA = new SerializableMatrix(A);
+            SimpleMatrix ssy = sy.convertToSM();
+            SimpleMatrix ssA = sA.convertToSM();
+            System.out.println(ssA.transpose().mult(ssA).invert().mult(ssA.transpose().mult(ssy)));
 
         } catch (Throwable t) {
             t.printStackTrace();
@@ -67,6 +78,28 @@ public class TestPoliticianCreation {
         }
     }
 
+    @Test
+    public void testCoefficientEvaluation() {
+        try {
+            SimpleMatrix y = readObjectFromFile("y.ptnla", SerializableMatrix.class).convertToSM();
+            SimpleMatrix A = readObjectFromFile("A.ptnla", SerializableMatrix.class).convertToSM();
+            SimpleMatrix w = A.transpose().mult(A).invert().mult(A.transpose().mult(y));
+            SimpleMatrix nny = A.mult(w);
+            System.out.println(y);
+            System.out.println(nny);
+        } catch (Throwable t) {
+            t.printStackTrace();
+            fail();
+        }
+    }
+
+    public <T> T readObjectFromFile(String fileName, Class<T> tClass) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        URL url = this.getClass().getClassLoader().getResource(fileName);
+        File file = new File(url.getPath());
+        String value = FileUtils.readFileToString(file);
+        return objectMapper.readValue(value, tClass);
+    }
 
 
 }
