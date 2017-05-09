@@ -3,14 +3,16 @@ package com.gokhanozg.ptnla;
 import com.gokhanozg.ptnla.api.TwitterConnector;
 import com.gokhanozg.ptnla.dao.PoliticanDao;
 import org.apache.http.HttpException;
-import org.ejml.simple.SimpleMatrix;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.*;
 
 /**
  * Created by mephala on 4/24/17.
@@ -18,16 +20,18 @@ import java.util.*;
 public class Main {
 
     private static final String KK_TWITTER_NAME = "kilicdarogluk";
+    private static final int THREAD = 8;
+    private static final ExecutorService executorService = Executors.newFixedThreadPool(THREAD);
+    private static final int EPOCH = 50;
     private static PoliticanDao politicanDao = new PoliticanDao();
     private static List<Politician> allPoliticians;
     private static SimpleDateFormat sdf = new SimpleDateFormat("dd.MM.yy");
 
-
     public static void main(String[] args) {
         try {
-//            createPoliticansIfNotExists();
-//            initTrendsIfNotInitiated();
-//            initTweetsIfNotInitiated();
+            createPoliticansIfNotExists();
+            initTrendsIfNotInitiated();
+            initTweetsIfNotInitiated();
             createRegressionCoefficients();
         } catch (Throwable t) {
             System.err.println("Program terminated due to Fatal error.");
@@ -37,102 +41,33 @@ public class Main {
 
     }
 
-    private static void createRegressionCoefficients() {
+    private static void createRegressionCoefficients() throws InterruptedException, ExecutionException {
         if (allPoliticians == null || allPoliticians.isEmpty()) {
             allPoliticians = politicanDao.getAllPoliticians();
         }
-        List<String> tweetStrings = new ArrayList<>();
         for (Politician politician : allPoliticians) {
             List<FacebookTrendInterval> trendIntervals = politician.getTrendIntervals();
-
-
-            List<Word> wordList = createTweetWordsList(tweetStrings, trendIntervals);
-            int yColumns = trendIntervals.size();
-            SimpleMatrix y = new SimpleMatrix(yColumns, 1);
-            for (int i = 0; i < trendIntervals.size(); i++) {
-                FacebookTrendInterval interval = trendIntervals.get(i);
-                y.setRow(i, 0, interval.getPopulationChange().doubleValue());
+            List<Future<List<Word>>> calculatedWordListListFutures = new ArrayList<>();
+            List<List<Word>> calculatedWordListList = new ArrayList<>();
+            for (int i = 0; i < EPOCH; i++) {
+                CalculateWordCoefficients wordCoefficientsCalculator = new CalculateWordCoefficients(trendIntervals);
+                calculatedWordListListFutures.add(executorService.submit(wordCoefficientsCalculator));
             }
-            SimpleMatrix A = new SimpleMatrix(yColumns, wordList.size());
-            for (int i = 0; i < yColumns; i++) {
-                A.setRow(i, 0, getPersistentValues(wordList, trendIntervals.get(i)));
+            executorService.shutdown();
+            executorService.awaitTermination(999999999999L, TimeUnit.DAYS);// Wait until job is done.
+            for (Future<List<Word>> wordListListFuture : calculatedWordListListFutures) {
+                calculatedWordListList.add(wordListListFuture.get());
             }
-            System.out.println(A);
-            System.out.println("*********************************************************************");
-            SimpleMatrix w = A.transpose().mult(A).invert().mult(A.transpose().mult(y));
-            System.out.println(w);
-            for (int i = 0; i < wordList.size(); i++) {
-                Word word = wordList.get(i);
-                word.setCoefficient(w.get(i, 0));
-            }
-            Collections.sort(wordList, (o1, o2) -> {
-                Double persistentCoefficientCombined1 = o1.getCoefficient() * o1.getPersistentValue();
-                Double persistentCoefficientCombined2 = o2.getCoefficient() * o2.getPersistentValue();
-                return persistentCoefficientCombined2.compareTo(persistentCoefficientCombined1);
-            });
 
             System.out.println("******************************************************");
-
             System.out.println("Top 10 rewarding words in tweets:");
             for (int i = 0; i < 10; i++) {
-                System.out.println(wordList.get(i));
+                System.out.println(calculatedWordListList.get(i).get(0));
             }
         }
 
     }
 
-    private static List<Word> createTweetWordsList(List<String> tweetStrings, List<FacebookTrendInterval> trendIntervals) {
-        for (FacebookTrendInterval trendInterval : trendIntervals) {
-            List<TweetObject> tweets = trendInterval.getTweets();
-            for (TweetObject tweet : tweets) {
-                String tweetString = tweet.getText();
-                tweetStrings.add(tweetString);
-            }
-        }
-        Set<String> words = new HashSet<>();
-        for (String tweetString : tweetStrings) {
-            tokenizeWordsAndAddToSet(words, tweetString);
-        }
-        List<Word> wordList = new ArrayList<>();
-        for (String word : words) {
-            Word wd = new Word();
-            wd.setWordText(word);
-            wd.setId(UUID.randomUUID().toString());
-            wd.setPersistentValue(Math.random());
-            wordList.add(wd);
-        }
-        Collections.sort(wordList);
-        return wordList;
-    }
-
-    private static void tokenizeWordsAndAddToSet(Set<String> words, String tweetString) {
-        StringTokenizer tokenizer = new StringTokenizer(tweetString, " ");
-        while (tokenizer.hasMoreTokens()) {
-            words.add(tokenizer.nextToken());
-        }
-    }
-
-    private static double[] getPersistentValues(List<Word> wordList, FacebookTrendInterval facebookTrendInterval) {
-        //tokenizing all used words in the tweet.
-        Set<String> words = new HashSet<>();
-        List<TweetObject> tweets = facebookTrendInterval.getTweets();
-        for (TweetObject tweet : tweets) {
-            tokenizeWordsAndAddToSet(words, tweet.getText());
-        }
-
-
-        double[] values = new double[wordList.size()];
-        for (int i = 0; i < wordList.size(); i++) {
-            Word word = wordList.get(i);
-            String wordText = word.getWordText();
-            if (words.contains(wordText)) {
-                values[i] = word.getPersistentValue();
-            } else {
-                values[i] = 0; // if word doesn't exist in interval wordset, it's coefficient value doesn't matter.
-            }
-        }
-        return values;
-    }
 
     private static void initTweetsIfNotInitiated() throws HttpException, IOException, InterruptedException, ParseException, URISyntaxException {
         for (Politician politician : allPoliticians) {
