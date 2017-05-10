@@ -1,15 +1,24 @@
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.gokhanozg.ptnla.HibernateUtil;
 import com.gokhanozg.ptnla.SerializableMatrix;
+import com.gokhanozg.ptnla.Word;
 import mockit.integration.junit4.JMockit;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.math3.stat.regression.OLSMultipleLinearRegression;
 import org.ejml.simple.SimpleMatrix;
+import org.hibernate.Criteria;
+import org.hibernate.Session;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.net.URL;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Locale;
 
 import static junit.framework.TestCase.fail;
 
@@ -183,6 +192,70 @@ public class TestFunctions {
         } catch (Throwable t) {
             t.printStackTrace();
             fail();
+        }
+    }
+
+    @Test
+    public void testWordExtraction() {
+        try {
+            Session session = HibernateUtil.getSessionFactory().openSession();
+            session.beginTransaction();
+            Criteria criteria = session.createCriteria(Word.class);
+            List<Word> wordList = criteria.list();
+            session.getTransaction().commit();
+            session.close();
+            System.out.println(wordList.size());
+            Locale locale = Locale.forLanguageTag("tr");
+            Iterator<Word> wordIterator = wordList.iterator();
+            while (wordIterator.hasNext()) {
+                Word next = wordIterator.next();
+                String val = next.getWordText();
+                if (val.equals("Bu,")) {
+                    System.out.println("debuggo");
+                }
+                val = val.toLowerCase(locale);
+                val = val.replaceAll("\\!", "");
+                val = val.replaceAll("\\.", "");
+                val = val.replaceAll(",", "");
+                val = val.replaceAll(",", "");
+                if (val.endsWith("dir") || val.endsWith("dır")) {
+                    wordIterator.remove();
+                } else if (val.endsWith("miştir") || val.endsWith("muştur") || val.endsWith("müştür") || val.endsWith("mıştır")) {
+                    wordIterator.remove();
+                } else if (isNumeric(val)) {
+                    wordIterator.remove();
+                } else if (val.endsWith("'da") || val.endsWith("'de") || val.endsWith("’de") || val.endsWith("’da") || (val.endsWith("'dan") || val.endsWith("'den") || val.endsWith("’den") || val.endsWith("’dan"))) {
+                    wordIterator.remove();
+                } else if (val.endsWith("'ta") || val.endsWith("'te") || val.endsWith("’te") || val.endsWith("’ta") || (val.endsWith("'tan") || val.endsWith("'ten") || val.endsWith("’ten") || val.endsWith("’tan"))) {
+                    wordIterator.remove();
+                } else if (val.endsWith("'a") || val.endsWith("'e") || val.endsWith("’i") || val.endsWith("’ı") || val.endsWith("’ya") || val.endsWith("’ye") || val.endsWith("’a") || val.endsWith("’e") || (val.endsWith("'yi") || val.endsWith("'yı")) || (val.endsWith("'ye") || val.endsWith("'ya") || val.endsWith("’yi"))) {
+                    wordIterator.remove();
+                } else if (val.endsWith("'nın") || val.endsWith("'nin") || val.endsWith("'nun") || val.endsWith("'nün") || val.endsWith("’nin") || val.endsWith("’nun") || val.endsWith("’nün") || val.endsWith("’nın") || (val.endsWith("'yi") || val.endsWith("'yı"))) {
+                    wordIterator.remove();
+                } else if (val.endsWith("'") || val.endsWith("’")) {
+                    wordIterator.remove();
+                } else if (val.endsWith("'yla") || val.endsWith("'yle") || val.endsWith("’yla") || val.endsWith("’yle")) {
+                    wordIterator.remove();
+                } else if (val.endsWith("'in") || val.endsWith("'ın") || val.endsWith("'nin") || val.endsWith("'nın") || val.endsWith("’in") || val.endsWith("’ın") || val.endsWith("’nin") || val.endsWith("’nın")) {
+                    wordIterator.remove();
+                }
+            }
+            Collections.sort(wordList);
+            System.out.println("Filtered size:" + wordList.size());
+            System.out.println("End filtering");
+
+        } catch (Throwable t) {
+            t.printStackTrace();
+            fail();
+        }
+    }
+
+    private boolean isNumeric(String val) {
+        try {
+            new BigDecimal(val);
+            return true;
+        } catch (Throwable t) {
+            return false;
         }
     }
 
