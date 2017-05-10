@@ -74,11 +74,11 @@ public class CalculateWordCoefficients implements Callable<List<Word>> {
         //tokenizing all used words in the tweet.
         Set<String> words = new HashSet<>();
         List<TweetObject> tweets = facebookTrendInterval.getTweets();
-        for (TweetObject tweet : tweets) {
-            tokenizeWordsAndAddToSet(words, tweet.getText());
+        if (tweets != null) {
+            for (TweetObject tweet : tweets) {
+                tokenizeWordsAndAddToSet(words, tweet.getText());
+            }
         }
-
-
         double[] values = new double[wordList.size()];
         for (int i = 0; i < wordList.size(); i++) {
             Word word = wordList.get(i);
@@ -103,9 +103,11 @@ public class CalculateWordCoefficients implements Callable<List<Word>> {
         List<String> tweetStrings = new ArrayList<>();
         for (FacebookTrendInterval trendInterval : trendIntervals) {
             List<TweetObject> tweets = trendInterval.getTweets();
-            for (TweetObject tweet : tweets) {
-                String tweetString = tweet.getText();
-                tweetStrings.add(tweetString);
+            if (tweets != null) {
+                for (TweetObject tweet : tweets) {
+                    String tweetString = tweet.getText();
+                    tweetStrings.add(tweetString);
+                }
             }
         }
         Set<String> words = new HashSet<>();
