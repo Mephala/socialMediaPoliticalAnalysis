@@ -210,6 +210,7 @@ public class TestFunctions {
             System.out.println(wordList.size());
             Locale locale = Locale.forLanguageTag("tr");
             Iterator<Word> wordIterator = wordList.iterator();
+            Set<String> duplicateWordSet = new HashSet<>();
             while (wordIterator.hasNext()) {
                 Word next = wordIterator.next();
                 String val = next.getWordText();
@@ -252,6 +253,8 @@ public class TestFunctions {
                     wordIterator.remove();
                 } else if (val.startsWith("http://") || val.startsWith("https://")) {
                     wordIterator.remove();
+                } else if (duplicateWordSet.contains(val)) {
+                    wordIterator.remove();
                 } else {
                     for (String ignoredWord : ignoredWords) {
                         if (val.startsWith(ignoredWord) || val.endsWith(ignoredWord)) {
@@ -260,6 +263,7 @@ public class TestFunctions {
                         }
                     }
                 }
+                duplicateWordSet.add(val);
             }
             Collections.sort(wordList);
             System.out.println("Filtered size:" + wordList.size());
