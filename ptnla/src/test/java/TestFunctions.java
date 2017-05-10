@@ -15,10 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URL;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 
 import static junit.framework.TestCase.fail;
 
@@ -198,6 +195,12 @@ public class TestFunctions {
     @Test
     public void testWordExtraction() {
         try {
+            Set<String> ignoredWords = new HashSet<>();
+            File f = new File(this.getClass().getClassLoader().getResource("ignoredTurkishWords.txt").getPath());
+            List<String> lines = FileUtils.readLines(f);
+            for (String line : lines) {
+                ignoredWords.add(line.trim());
+            }
             Session session = HibernateUtil.getSessionFactory().openSession();
             session.beginTransaction();
             Criteria criteria = session.createCriteria(Word.class);
@@ -210,14 +213,15 @@ public class TestFunctions {
             while (wordIterator.hasNext()) {
                 Word next = wordIterator.next();
                 String val = next.getWordText();
-                if (val.equals("Bu,")) {
+                if (val.equals("Oluyor?”")) {
                     System.out.println("debuggo");
                 }
                 val = val.toLowerCase(locale);
+                val = val.trim();
                 val = val.replaceAll("\\!", "");
                 val = val.replaceAll("\\.", "");
                 val = val.replaceAll(",", "");
-                val = val.replaceAll(",", "");
+                val = val.replaceAll("”", "");
                 if (val.endsWith("dir") || val.endsWith("dır")) {
                     wordIterator.remove();
                 } else if (val.endsWith("miştir") || val.endsWith("muştur") || val.endsWith("müştür") || val.endsWith("mıştır")) {
@@ -226,18 +230,35 @@ public class TestFunctions {
                     wordIterator.remove();
                 } else if (val.endsWith("'da") || val.endsWith("'de") || val.endsWith("’de") || val.endsWith("’da") || (val.endsWith("'dan") || val.endsWith("'den") || val.endsWith("’den") || val.endsWith("’dan"))) {
                     wordIterator.remove();
+                } else if (val.endsWith("'na") || val.endsWith("'ü") || val.endsWith("’ü") || val.endsWith("'u") || val.endsWith("’u") || val.endsWith("'yü") || val.endsWith("’yü") || val.endsWith("'yu") || val.endsWith("’yu") || val.endsWith("'la") || val.endsWith("’la") || val.endsWith("'le") || val.endsWith("’le") || val.endsWith("'teki") || val.endsWith("’teki") || val.endsWith("'taki") || val.endsWith("’taki") || val.endsWith("'ni") || val.endsWith("’ni") || val.endsWith("'nı") || val.endsWith("’nı") || val.endsWith("'i") || val.endsWith("’i") || val.endsWith("'ı") || val.endsWith("’ı") || val.endsWith("'ne") || val.endsWith("’ne") || val.endsWith("’na") || (val.endsWith("'ndan") || val.endsWith("'nden") || val.endsWith("’nden") || val.endsWith("’ndan"))) {
+                    wordIterator.remove();
                 } else if (val.endsWith("'ta") || val.endsWith("'te") || val.endsWith("’te") || val.endsWith("’ta") || (val.endsWith("'tan") || val.endsWith("'ten") || val.endsWith("’ten") || val.endsWith("’tan"))) {
                     wordIterator.remove();
                 } else if (val.endsWith("'a") || val.endsWith("'e") || val.endsWith("’i") || val.endsWith("’ı") || val.endsWith("’ya") || val.endsWith("’ye") || val.endsWith("’a") || val.endsWith("’e") || (val.endsWith("'yi") || val.endsWith("'yı")) || (val.endsWith("'ye") || val.endsWith("'ya") || val.endsWith("’yi"))) {
                     wordIterator.remove();
                 } else if (val.endsWith("'nın") || val.endsWith("'nin") || val.endsWith("'nun") || val.endsWith("'nün") || val.endsWith("’nin") || val.endsWith("’nun") || val.endsWith("’nün") || val.endsWith("’nın") || (val.endsWith("'yi") || val.endsWith("'yı"))) {
                     wordIterator.remove();
-                } else if (val.endsWith("'") || val.endsWith("’")) {
+                } else if (val.endsWith("'") || val.endsWith("’") || val.endsWith("?")) {
                     wordIterator.remove();
                 } else if (val.endsWith("'yla") || val.endsWith("'yle") || val.endsWith("’yla") || val.endsWith("’yle")) {
                     wordIterator.remove();
+                } else if (val.length() <= 2) {
+                    wordIterator.remove();
                 } else if (val.endsWith("'in") || val.endsWith("'ın") || val.endsWith("'nin") || val.endsWith("'nın") || val.endsWith("’in") || val.endsWith("’ın") || val.endsWith("’nin") || val.endsWith("’nın")) {
                     wordIterator.remove();
+                } else if (ignoredWords.contains(val)) {
+                    wordIterator.remove();
+                } else if (val.startsWith("@") || val.startsWith("#")) {
+                    wordIterator.remove();
+                } else if (val.startsWith("http://") || val.startsWith("https://")) {
+                    wordIterator.remove();
+                } else {
+                    for (String ignoredWord : ignoredWords) {
+                        if (val.startsWith(ignoredWord) || val.endsWith(ignoredWord)) {
+                            wordIterator.remove();
+                            break;
+                        }
+                    }
                 }
             }
             Collections.sort(wordList);
