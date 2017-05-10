@@ -76,14 +76,17 @@ public class TwitterConnector {
         Set<String> idSet = new HashSet<>();
         for (FacebookTrendInterval facebookTrendInterval : trendIntervalList) {
             List<TweetObject> tweetObjectList = facebookTrendInterval.getTweets();
-            for (TweetObject tweetObject : tweetObjectList) {
-                String id = tweetObject.getId();
-                if (idSet.contains(id)) {
-                    System.out.println("Duplicate id in trend:" + facebookTrendInterval + ", duplicate tweet:" + tweetObject + "id:" + id);
-                } else {
-                    idSet.add(id);
+            if (tweetObjectList != null) {
+                for (TweetObject tweetObject : tweetObjectList) {
+                    String id = tweetObject.getId();
+                    if (idSet.contains(id)) {
+                        System.out.println("Duplicate id in trend:" + facebookTrendInterval + ", duplicate tweet:" + tweetObject + "id:" + id);
+                    } else {
+                        idSet.add(id);
+                    }
                 }
             }
+
         }
         new PoliticanDao().savePolitician(p);
     }
