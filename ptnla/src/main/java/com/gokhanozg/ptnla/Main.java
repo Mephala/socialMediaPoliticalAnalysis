@@ -11,7 +11,8 @@ import java.net.URISyntaxException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Created by mephala on 4/24/17.
@@ -129,7 +130,7 @@ public class Main {
         return textToWordsMap;
     }
 
-    private static void createRegressionCoefficients() throws InterruptedException, ExecutionException {
+    private static void createRegressionCoefficients() throws Exception {
         if (allPoliticians == null || allPoliticians.isEmpty()) {
             allPoliticians = politicanDao.getAllPoliticians();
         }
@@ -143,56 +144,59 @@ public class Main {
             System.out.println("Calculating word coefficients for politician:" + politician.getPoliticianTurkishName());
 
 
-            List<FacebookTrendInterval> trendIntervals = politician.getTrendIntervals();
-            List<Future<List<Word>>> calculatedWordListListFutures = new ArrayList<>();
-            List<List<Word>> calculatedWordListList = new ArrayList<>();
-            for (int i = 0; i < EPOCH; i++) {
-                CalculateWordCoefficients wordCoefficientsCalculator = new CalculateWordCoefficients(trendIntervals);
-                calculatedWordListListFutures.add(executorService.submit(wordCoefficientsCalculator));
-            }
-            executorService.shutdown();
-            executorService.awaitTermination(999999999999L, TimeUnit.DAYS);// Wait until job is done.
-            for (Future<List<Word>> wordListListFuture : calculatedWordListListFutures) {
-                calculatedWordListList.add(wordListListFuture.get());
-            }
-
-            final int size = calculatedWordListList.get(0).size();
-            final int ratingThreshold = size / BUFFED_RATIO;
-            Set<CalculatedWord> calculatedWords = new HashSet<>();
-
-            for (List<Word> wordList : calculatedWordListList) {
-                for (int i = 0; i < wordList.size(); i++) {
-                    Word w = wordList.get(i);
-                    long rating = wordList.size() - i; // if word is at start of the list, gets highest rating.
-                    if (rating < ratingThreshold) //if rating is lower than the most important quarter, it is ignored for this turn
-                        rating = 0;
-                    rating = rating * rating * rating * rating;
-                    CalculatedWord calculatedWord = new CalculatedWord(w.getWordText(), rating);
-                    if (calculatedWords.contains(calculatedWord)) {
-                        for (CalculatedWord cWord : calculatedWords) {
-                            if (cWord.equals(calculatedWord)) {
-                                cWord.setRating(cWord.getRating() + rating);
-                                break;
-                            }
-                        }
-                    } else {
-                        calculatedWords.add(calculatedWord);
-                    }
-                }
-            }
-            List<CalculatedWord> sortedCalculatedWords = new ArrayList<>();
-            for (CalculatedWord calculatedWord : calculatedWords) {
-                sortedCalculatedWords.add(calculatedWord);
-            }
-            Collections.sort(sortedCalculatedWords);
-
-
+//            List<Future<List<Word>>> calculatedWordListListFutures = new ArrayList<>();
+//            List<List<Word>> calculatedWordListList = new ArrayList<>();
+//            for (int i = 0; i < EPOCH; i++) {
+//                CalculateWordCoefficients wordCoefficientsCalculator = new CalculateWordCoefficients(politician);
+//                calculatedWordListListFutures.add(executorService.submit(wordCoefficientsCalculator));
+//            }
+//            executorService.shutdown();
+//            executorService.awaitTermination(999999999999L, TimeUnit.DAYS);// Wait until job is done.
+//            for (Future<List<Word>> wordListListFuture : calculatedWordListListFutures) {
+//                calculatedWordListList.add(wordListListFuture.get());
+//            }
+//
+//            final int size = calculatedWordListList.get(0).size();
+//            final int ratingThreshold = size / BUFFED_RATIO;
+//            Set<CalculatedWord> calculatedWords = new HashSet<>();
+//
+//            for (List<Word> wordList : calculatedWordListList) {
+//                for (int i = 0; i < wordList.size(); i++) {
+//                    Word w = wordList.get(i);
+//                    long rating = wordList.size() - i; // if word is at start of the list, gets highest rating.
+//                    if (rating < ratingThreshold) //if rating is lower than the most important quarter, it is ignored for this turn
+//                        rating = 0;
+//                    rating = rating * rating * rating * rating;
+//                    CalculatedWord calculatedWord = new CalculatedWord(w.getWordText(), rating);
+//                    if (calculatedWords.contains(calculatedWord)) {
+//                        for (CalculatedWord cWord : calculatedWords) {
+//                            if (cWord.equals(calculatedWord)) {
+//                                cWord.setRating(cWord.getRating() + rating);
+//                                break;
+//                            }
+//                        }
+//                    } else {
+//                        calculatedWords.add(calculatedWord);
+//                    }
+//                }
+//            }
+//            List<CalculatedWord> sortedCalculatedWords = new ArrayList<>();
+//            for (CalculatedWord calculatedWord : calculatedWords) {
+//                sortedCalculatedWords.add(calculatedWord);
+//            }
+//            Collections.sort(sortedCalculatedWords);
+//
+//
+//            System.out.println("*********** TOP 50 words for politician:" + politician.getPoliticianTurkishName() + "*******************");
+//            List<Word> mostAccurateWordList = findMostAccurateWordList(sortedCalculatedWords, calculatedWordListList);
+//            for (int i = 0; i < 50; i++) {
+//                System.out.println(mostAccurateWordList.get(i).getWordText());
+//            }
+            List<Word> mostAccurateWordList = new CalculateWordCoefficients(politician).call();
             System.out.println("*********** TOP 50 words for politician:" + politician.getPoliticianTurkishName() + "*******************");
-            List<Word> mostAccurateWordList = findMostAccurateWordList(sortedCalculatedWords, calculatedWordListList);
             for (int i = 0; i < 50; i++) {
                 System.out.println(mostAccurateWordList.get(i).getWordText());
             }
-
             System.out.println("*** Saving most accurate word coefficients for future predictions... ***");
             politician.setWords(mostAccurateWordList);
             politicanDao.savePolitician(politician);
