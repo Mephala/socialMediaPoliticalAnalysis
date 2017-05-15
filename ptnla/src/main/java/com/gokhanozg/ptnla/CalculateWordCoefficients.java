@@ -67,6 +67,14 @@ public class CalculateWordCoefficients implements Callable<List<Word>> {
         for (int i = 0; i < randomizedWords.size(); i++) {
             randomizedWords.get(i).setCoefficient(w.get(i + 1, 0));
         }
+
+        Iterator<Word> wordIterator = wordList.iterator();
+        while (wordIterator.hasNext()) {
+            Word next = wordIterator.next();
+            if (next == null || next.getPersistentValue() == null || next.getCoefficient() == null)
+                wordIterator.remove();
+        }
+
         Collections.sort(wordList, (o1, o2) -> {
             Double impact1 = o1.getCoefficient() * o1.getPersistentValue();
             Double impact2 = o2.getCoefficient() * o2.getPersistentValue();

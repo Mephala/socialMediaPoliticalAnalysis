@@ -20,6 +20,7 @@ import java.util.concurrent.Executors;
 public class Main {
 
     private static final String KK_TWITTER_NAME = "kilicdarogluk";
+    //    private static final String RTE_TWITTER_NAME = "RT_Erdogan";
     private static final int THREAD = 8;
     private static final ExecutorService executorService = Executors.newFixedThreadPool(THREAD);
     private static final int EPOCH = 1;
@@ -264,21 +265,25 @@ public class Main {
         /*
         * Source = https://www.socialbakers.com/statistics/facebook/pages/detail/76599755300
          */
-        List<FacebookTrendInterval> trendIntervals = new ArrayList<>();
-        addInterval(trendIntervals, "03.12.16", "17.12.16", BigDecimal.valueOf(-75000));
-        addInterval(trendIntervals, "17.12.16", "31.12.16", BigDecimal.valueOf(-85000));
-        addInterval(trendIntervals, "31.12.16", "14.01.17", BigDecimal.valueOf(-70000));
-        addInterval(trendIntervals, "14.01.17", "28.01.17", BigDecimal.valueOf(-70000));
-        addInterval(trendIntervals, "28.01.17", "11.02.17", BigDecimal.valueOf(-70000));
-        addInterval(trendIntervals, "11.02.17", "25.02.17", BigDecimal.valueOf(-70000));
-        addInterval(trendIntervals, "25.02.17", "11.03.17", BigDecimal.valueOf(-70000));
-        addInterval(trendIntervals, "11.03.17", "25.03.17", BigDecimal.valueOf(-70000));
-        addInterval(trendIntervals, "25.03.17", "08.04.17", BigDecimal.valueOf(10000));
-        addInterval(trendIntervals, "08.04.17", "22.04.17", BigDecimal.valueOf(80000));
+        if (politician.getTrendIntervals() == null || politician.getTrendIntervals().isEmpty()) {
+            List<FacebookTrendInterval> trendIntervals = new ArrayList<>();
+            addInterval(trendIntervals, "03.12.16", "17.12.16", BigDecimal.valueOf(-75000));
+            addInterval(trendIntervals, "17.12.16", "31.12.16", BigDecimal.valueOf(-85000));
+            addInterval(trendIntervals, "31.12.16", "14.01.17", BigDecimal.valueOf(-70000));
+            addInterval(trendIntervals, "14.01.17", "28.01.17", BigDecimal.valueOf(-70000));
+            addInterval(trendIntervals, "28.01.17", "11.02.17", BigDecimal.valueOf(-70000));
+            addInterval(trendIntervals, "11.02.17", "25.02.17", BigDecimal.valueOf(-70000));
+            addInterval(trendIntervals, "25.02.17", "11.03.17", BigDecimal.valueOf(-70000));
+            addInterval(trendIntervals, "11.03.17", "25.03.17", BigDecimal.valueOf(-70000));
+            addInterval(trendIntervals, "25.03.17", "08.04.17", BigDecimal.valueOf(10000));
+            addInterval(trendIntervals, "08.04.17", "22.04.17", BigDecimal.valueOf(80000));
 
 
-        politician.setTrendIntervals(trendIntervals);
-        politicanDao.savePolitician(politician);
+            politician.setTrendIntervals(trendIntervals);
+            politicanDao.savePolitician(politician);
+        }
+
+
     }
 
     private static void addInterval(List<FacebookTrendInterval> trendIntervals, String startDate, String endDate, BigDecimal change) throws ParseException {
@@ -305,10 +310,20 @@ public class Main {
         kkilic.setPoliticianId(KK_TWITTER_NAME); // twitter account name is unique enough
         kkilic.setPoliticianTwitterAccountName(KK_TWITTER_NAME);
 
+//        Politician rte = new Politician();
+//        rte.setPoliticianTurkishName("Recep Tayyip Erdoğan");
+//        rte.setPoliticianId(RTE_TWITTER_NAME); // twitter account name is unique enough
+//        rte.setPoliticianTwitterAccountName(RTE_TWITTER_NAME);
+
         if (!allPoliticians.contains(kkilic)) {
             allPoliticians.add(kkilic);
             politicanDao.savePolitician(kkilic);
         }
+
+//        if (!allPoliticians.contains(rte)) {
+//            allPoliticians.add(rte);
+//            politicanDao.savePolitician(rte);
+//        }
 
 
     }
